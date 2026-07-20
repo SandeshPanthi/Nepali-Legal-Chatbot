@@ -1,0 +1,58 @@
+Here are some questions that illustrate the difference between **vector RAG** and **vectorless (keyword/BM25) RAG**.
+
+### Good semantic (vector RAG) questions
+
+These intentionally avoid the exact legal wording.
+
+1. **"Can I run electricity and water pipes through my neighbor's property if there is no other practical way to connect my house?"**
+
+   * The law uses terms like **"lay pipe or line"** and **"basic services"**, not "run electricity" or "connect my house."
+   * A vector search can associate these concepts even without exact keyword matches.
+
+2. **"What happens if my usual route to the main road disappears after a landslide?"**
+
+   * The text mentions **"passage... destroyed subsequently due to a disaster"** and **"servitude of a reasonable passage."**
+   * The question uses "usual route" and "landslide" instead of the document's wording.
+
+3. **"If emergency responders need to enter private property to save people during a flood, can they do so without permission?"**
+
+   * The statute says **"victims may be rescued... by entering the house or land"** and lists disasters like **fire, earthquake, volcano and flood**.
+   * The question paraphrases "entering the house or land" as "emergency responders need to enter private property."
+
+4. **"Can a landowner block a pathway that the local community has used for generations?"**
+
+   * The document refers to land **"in use since ancient time as a public or community road"**, not "used for generations."
+   * Semantic retrieval is likely to connect these ideas.
+
+5. **"When selling part of my land, do I have to make sure both the buyer and I can still get in and out?"**
+
+   * The statute talks about **"provision of passage or exit"**, while the question uses everyday language.
+
+---
+
+### Questions vectorless RAG would likely answer easily
+
+These contain the exact legal terminology.
+
+* "What does Section 375 say about basic services?"
+* "What is the servitude of passage under Section 373?"
+* "What does Section 372 state about disasters?"
+* "What does Section 376 say about using a river or stream?"
+
+These match the wording in the document closely, making keyword search very effective.
+
+---
+
+### A particularly good demo question
+
+If you want to demonstrate the advantage of vector embeddings, I'd use this:
+
+> **"My house cannot be connected to electricity, water, or sewerage through my own property. Can I legally use my neighbor's land to install the necessary utilities?"**
+
+This is a strong test because:
+
+* It never uses the exact phrase **"lay pipe or line."**
+* It paraphrases **"basic services"** as **"utilities."**
+* It asks the legal principle in natural language rather than quoting the statute.
+
+A semantic embedding model should retrieve Section 375 because it understands the meaning, whereas a purely keyword-based retriever has a higher chance of missing it if the keywords don't align well.
