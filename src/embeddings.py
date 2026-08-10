@@ -1,7 +1,8 @@
 """
 Embedding generation for document chunks and queries using SentenceTransformer.
 """
-
+import os
+from dotenv import load_dotenv
 import numpy as np
 from sentence_transformers import SentenceTransformer
 from typing import List, Dict, Any, Tuple
@@ -28,11 +29,24 @@ class EmbeddingManager:
     def _load_model(self):
         """Load the SentenceTransformer model"""
         try:
+            load_dotenv()
+
+            hugging_face_api_key = os.getenv("HUGGING_FACE_API_KEY")
+
             print(f"Loading embedding model: {self.model_name}")
-            self.model = SentenceTransformer(self.model_name)
-            print(f"Model loaded successfully. Embedding dimension: {self.model.get_embedding_dimension()}")
+
+            self.model = SentenceTransformer(
+                self.model_name,
+                token=hugging_face_api_key
+            )
+
+            print(
+                f"Model loaded successfully. "
+                f"Embedding dimension: {self.model.get_embedding_dimension()}"
+            )
+
         except Exception as e:
-            print(f"Error loading model {self.model_name}:{e}")
+            print(f"Error loading model {self.model_name}: {e}")
             raise
 
     def generate_embeddings(self, texts: List[Document]) -> np.ndarray:

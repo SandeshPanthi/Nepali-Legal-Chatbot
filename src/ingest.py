@@ -1,13 +1,3 @@
-"""
-Ingestion pipeline: load each legal PDF, parse it into structured chunks,
-generate embeddings, and store everything in the vector store.
-
-The vector store is persisted to disk (ChromaDB persist directory), so by
-default this SKIPS re-embedding if the collection already has documents in
-it from a previous run. Pass force_rebuild=True (or run main.py --rebuild)
-to wipe the collection and re-embed everything from scratch.
-"""
-
 from config import (
     CIVIL_CODE_PATH,
     PENAL_CODE_PATH,
