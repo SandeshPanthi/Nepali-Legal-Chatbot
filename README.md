@@ -1,48 +1,181 @@
-# Legal RAG Pipeline
+# Legal RAG Assistant
 
-A Retrieval-Augmented-Generation pipeline over three Nepali legal documents
-(Civil Code, Penal Code, Constitution), converted from the original
-`pdf_loader.ipynb` notebook into a proper Python project — no logic changed,
-only reorganized into modules.
+This project is a legal question-answering system built for Nepali legal documents using a hybrid retrieval pipeline. It combines:
 
-## Folder structure
+- semantic vector search with ChromaDB and sentence-transformers
+- keyword retrieval with BM25
+- reciprocal rank fusion (RRF) to merge both retrieval signals
+- a Groq-powered LLM for grounded legal answers
+- a FastAPI backend for inference
+- a Streamlit frontend for chat-style interaction
 
-```
-legal_rag_pipeline/
-├── main.py                  # Entry point: builds the index, runs a query, prints the result
-├── config.py                # Central paths & settings (models, thresholds, file paths)
-├── requirements.txt
-├── .env.example              # Copy to .env and add your GROQ_API_KEY
+The system is designed to answer questions using the Civil Code, Penal Code, and Constitution as the primary source documents.
+
+## What changed recently
+
+The project has been upgraded from a vector-only retrieval pipeline to a hybrid RAG system:
+
+- `src/bm25.py` adds BM25 keyword retrieval
+- `src/retriever.py` now combines vector similarity and BM25 results using RRF
+- `src/ingest.py` builds both the vector index and the BM25 index from the same chunked legal data
+- `api/main.py` exposes the retrieval + generation pipeline through a FastAPI service
+- `streamlit_app.py` provides a browser-based interface for asking legal questions
+
+## Project structure
+
+```text
+LEGAL_MAIN/
+├── api/
+│   ├── main.py
+│   └── routes/
+│       ├── chat.py
+│       ├── dependencies.py
+│       └── schemas.py
 ├── data/
-│   ├── acts/                 # Put civil_code.pdf, penal_code.pdf, constitution.pdf here
-│   └── vector_store/         # ChromaDB persistent storage (auto-created)
-└── src/
-    ├── __init__.py
-    ├── document_loader.py    # PDF loading + metadata cleanup (per document)
-    ├── parsers.py             # Rule-based text -> chunk parsers (per document)
-    ├── embeddings.py          # EmbeddingManager (SentenceTransformer)
-    ├── vector_store.py        # VectorStore (ChromaDB)
-    ├── retriever.py           # RAGRetriever (vector similarity search)
-    ├── rag_pipeline.py        # rag_llm() + Groq LLM setup
-    └── ingest.py               # Orchestrates load -> parse -> embed -> store
+│   ├── acts/
+│   └── vector_store/
+├── src/
+│   ├── __init__.py
+│   ├── bm25.py
+│   ├── document_loader.py
+│   ├── embeddings.py
+│   ├── ingest.py
+│   ├── memory.py
+│   ├── parsers.py
+│   ├── rag_pipeline.py
+│   ├── retriever.py
+│   └── vector_store.py
+├── config.py
+├── ingest.py
+├── main.py
+├── pyproject.toml
+├── README.md
+├── requirements.txt
+└──   streamlit_app.py  streamlit_app.py
 ```
+
+## Prerequisites
+
+Before running the app, make sure you have:
+
+- Python environment managed with `uv`
+- the legal PDF files placed in `data/acts/`
+- a valid `GROQ_API_KEY` in a `.env` file at the project root
+
+Example `.env`:
+
+```env
+GROQ_API_KEY=your_api_key_here
+```
+
+Required source files:
+
+- `data/acts/civil_code.pdf`
+- `data/acts/penal_code.pdf`
+- `data/acts/constitution.pdf`
 
 ## Setup
 
-1. Install dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
-2. Place the three source PDFs in `data/acts/`:
-   - `civil_code.pdf`
-   - `penal_code.pdf`
-   - `constitution.pdf`
-3. Copy `.env.example` to `.env` and set your `GROQ_API_KEY`.
+From the project root:
+
+```bash
+uv sync
+```
+
+## Build the legal index
+
+Run the ingestion step first. This loads the PDFs, chunks the legal text, embeds the chunks, and builds the BM25 index.
+
+```bash
+uv run python ingest.py --rebuild
+```
+
+This is required before starting the backend or the frontend.
+
+## Run the application
+
+Open separate terminals for each service.
+
+### 1) Start the backend
+
+```bash
+uv run python -m uvicorn api.main:app --reload --port 8000
+```
+
+The API will be available at:
+
+```text
+http://127.0.0.1:8000
+```
+
+### 2) Start the Streamlit app
+
+```bash
+uv run python -m streamlit run streamlit_app.py
+```
+
+Then open the local URL displayed by Streamlit in your browser.
+
+## How it works
+
+1. `ingest.py` processes the legal PDFs and creates chunked document representations.
+2. The vector store stores semantic embeddings for each chunk.
+3. BM25 creates a keyword index over the same chunk list.
+4. `RAGRetriever` performs hybrid retrieval using vector similarity + BM25 and merges them through reciprocal rank fusion.
+5. `rag_pipeline.py` builds the grounded prompt and sends it to Groq.
+6. The backend returns a structured result with the answer and sources.
+7. Streamlit sends user questions to the backend and displays the answer in chat format.
+
+## Example usage
+
+Ask questions like:
+
+- What is the legal procedure for a bill in the federal parliament?
+- What are the penalties for theft under the Penal Code?
+- What are the constitutional requirements for amendment of laws?
+
+## API endpoint
+
+The FastAPI backend exposes a POST endpoint:
+
+```http
+POST /chat
+```
+
+Request body:
+
+```json
+{
+  "query": "What is the procedure for passing a bill?"
+}
+```
+
+## Notes
+
+- BM25 and vector retrieval are both persisted in the project’s vector store directory.
+- The ingestion step rebuilds the stored legal index when you pass `--rebuild`.
+- The Streamlit UI depends on the backend running at port `8000`.
+
+## Optional CLI entry point
+
+If needed, the root script can also be used for direct terminal-based retrieval:
+
+```bash
+uv run python main.py
+```
+
+This is useful for quick local debugging, but the main user workflow is:
+
+1. ingest
+2. backend
+3. Streamlit UI
+
+**Disclaimer:** This project is for research and educational purposes only. Its responses are generated from retrieved legal documents and should not be treated as legal advice. Users should consult the authoritative legal texts and qualified legal professionals for legal matters.
 
 ## Usage
 
-```bash
-python main.py "Punishment for robbery"
+```
+"Punishment for robbery"
 ```
 
 ## Example Query
@@ -82,25 +215,50 @@ It is worth noting that, according to the Constitution of Nepal, Part-9 - Federa
 
 Therefore, it is crucial for the government to manage its legislative agenda carefully and work with the upper house to pass important legislation, or to use other means to achieve its policy objectives.
 
---------------------------------------------------------------------------------------
+## Architecture diagram
 
-Confidence: 0.07056301832199097
+```mermaid
+flowchart LR
+    A[User asks question in Streamlit] --> B[Streamlit UI]
+    B --> C[FastAPI Backend /chat]
+    C --> D[Hybrid Retriever]
 
---------------------------------------------------------------------------------------
+    D --> E[Vector Retrieval\nChromaDB + embeddings]
+    D --> F[BM25 Retrieval]
 
-Sources: [{'source': 'THE CONSTITUTION OF NEPAL', 'page': 'unknown', 'score': 0.07056301832199097, 'preview': '199. Procedures for p assage of Bills: (1) A Bill passe d by the State Assembly shall be presented to the Chief of State......'}, {'source': 'THE CONSTITUTION OF NEPAL', 'page': 'unknown', 'score': 0.06221210956573486, 'preview': '111. Procedures for passage of Bills: (1) A Bill passed by one House of the Federal Parliament shall be transmitted to t......'}, {'source': 'THE CONSTITUTION OF NEPAL', 'page': 'unknown', 'score': 0.046923935413360596, 'preview': '99. Voting: Except as otherwise provided in this Constitution, any motions submitted for decision in either House o f th......'}]
+    G[Legal chunks from PDF corpus] --> E
+    G --> F
 
-or run without arguments to be prompted for a query:
+    E --> H[RRF Fusion\nReciprocal Rank Fusion]
+    F --> H
 
-```bash
-python main.py
+    H --> I[Top ranked legal context]
+    C --> J[Groq LLM]
+    I --> J
+
+    J --> K[Grounded legal answer + sources]
+    K --> B
+    B --> L[User sees response]
+
+    subgraph Data Sources
+        G
+    end
+
+    subgraph Retrieval Layer
+        D
+        E
+        F
+        H
+        I
+    end
+
+    subgraph App Layer
+        A
+        B
+        C
+        J
+        K
+        L
+    end
 ```
 
-Each run builds the vector index from the PDFs (loads, parses, embeds, and
-stores the documents — replacing any existing collection) and then answers
-the given query, printing:
-
-- `Answer` — the LLM's grounded answer
-- `Sources` — the legal documents/sections used
-- `Confidence` — the top similarity score
-- `Context Preview` — first 300 characters of the retrieved context
