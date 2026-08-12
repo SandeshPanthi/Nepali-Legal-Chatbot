@@ -15,7 +15,7 @@ Usage:
 
 import argparse
 
-from config import DEFAULT_TOP_K, DEFAULT_MIN_SCORE
+from config import DEFAULT_TOP_K
 from src.ingest import build_index
 from src.retriever import RAGRetriever
 from src.rag_pipeline import rag_llm, get_llm
@@ -33,7 +33,6 @@ def parse_args():
     parser.add_argument(
         "--min-score",
         type=float,
-        default=DEFAULT_MIN_SCORE,
         help="Minimum similarity score for a retrieved chunk to be kept",
     )
     return parser.parse_args()
@@ -60,7 +59,6 @@ def main():
         rag_retriever,
         llm,
         top_k=args.top_k,
-        min_score=args.min_score,
         return_context=True,
     )
     print("\n--------------------------------------------------------------------------------------\n")

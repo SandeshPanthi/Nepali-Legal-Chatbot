@@ -45,12 +45,12 @@ if query:
             with st.chat_message("assistant"):
                 st.write(answer)
 
-                st.subheader("Sources")
+                # st.subheader("Sources")
 
-                for source in result["sources"]:
-                    st.write(
-                        f"**{source['source']}** | "
-                    )
+                # for source in result["sources"]:
+                #     st.write(
+                #         f"**{source['source']}** | "
+                #     )
 
        
 

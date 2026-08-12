@@ -25,11 +25,11 @@ def get_llm():
     return llm
 
 
-def rag_llm(query, retriever, llm, top_k=5, min_score=0.2, return_context=False):
+def rag_llm(query, retriever, llm, top_k=5, return_context=False):
     """Rag pipeline with features:
         return answer, sources, confidence score
     """
-    results = retriever.retrieve(query, top_k=top_k, score_threshold=min_score)
+    results = retriever.retrieve(query, top_k=top_k)
     if not results:
         return {'answer': "No relevant context found.", 'sources': [], 'confidence': 0.0, 'context': ''}
 
@@ -50,10 +50,21 @@ def rag_llm(query, retriever, llm, top_k=5, min_score=0.2, return_context=False)
         metadata = doc["document"].metadata
 
         sources.append({
-            "source": metadata.get("title", metadata.get("source", "unknown")),
-            "page": metadata.get("page", "unknown"),
-            "score": doc["similarity_score"],
-            "preview": doc["document"].page_content[:120] + "......"
+        "id": doc["id"],
+        "source": metadata.get(
+            "source_file",
+            metadata.get("title", "Unknown")
+        ),
+        "title": metadata.get("title", "Unknown"),
+        "page": metadata.get("page", "unknown"),
+        "section": metadata.get("section_title", "unknown"),
+        "vector_rank": doc["vector_rank"],
+        "bm25_rank": doc["bm25_rank"],
+        "retrieval_agreement": doc["retrieval_agreement"],
+        "vector_score": doc["vector_score"],
+        "bm25_score": doc["bm25_score"],
+        "rrf_score": doc["rrf_score"],
+        "rank": doc["rank"]
         })
 
     # Generate answer
@@ -71,7 +82,42 @@ def rag_llm(query, retriever, llm, top_k=5, min_score=0.2, return_context=False)
         "I couldn't find the answer in the provided legal documents." \nContext: \n{context}\n\n Question: {query}\n\nAnswer:
             
         """
-    confidence = max([doc['similarity_score'] for doc in results])
+
+    # ---------------------------------------------------------
+    # RETRIEVAL CONFIDENCE
+    # ---------------------------------------------------------
+
+    agreement_count = sum(
+        1
+        for doc in results
+        if doc["retrieval_agreement"]
+    )
+
+    agreement_ratio = agreement_count / len(results)
+
+    top_result = results[0]
+
+    confidence = {
+        "top_vector_score": round(
+            top_result["vector_score"], 4
+        ),
+
+        "top_bm25_score": round(
+            top_result["bm25_score"], 4
+        ),
+
+        "top_rrf_score": round(
+            top_result["rrf_score"], 6
+        ),
+
+        "retrieved_documents": len(results),
+
+        "agreement_count": agreement_count,
+
+        "agreement_ratio": round(
+            agreement_ratio, 2
+        )
+    }
     response = llm.invoke(prompt)
 
     output = {

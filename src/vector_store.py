@@ -3,7 +3,6 @@ ChromaDB-backed vector store for persisting document embeddings.
 """
 
 import os
-import uuid
 from typing import List, Dict, Any, Tuple
 
 import numpy as np
@@ -50,30 +49,37 @@ class VectorStore:
             print(f"Error initializing vector store: {e}")
             raise
 
-    def add_documents(self, documents: List[Any], embeddings: np.ndarray):
+    def add_documents(
+        self,
+        documents: List[Any],
+        embeddings: np.ndarray,
+        ids: List[str]
+    ):
         """
-        Add documents and their embeddings to the vector store
+        Add documents and their embeddings to the vector store.
 
-        Args:
-            documents: List of LangChain documents
-            embeddings: Corresponding embeddings for the documents.
+        The provided IDs are preserved so that the same document IDs
+        can be used by both ChromaDB and BM25.
         """
-        if len(documents) != len(embeddings):
-            raise ValueError("Number of documents must match number of embeddings")
 
-        print(f"Adding {len(documents)} documents to vector store.....")
+        if not (
+            len(documents) == len(embeddings) == len(ids)
+        ):
+            raise ValueError(
+                "Number of documents, embeddings, and IDs must match"
+            )
 
-        # Prepare data for ChromaDB
-        ids = []
+        print(
+            f"Adding {len(documents)} documents to vector store....."
+        )
+
         metadatas = []
         documents_text = []
         embeddings_list = []
 
-        for i, (doc, embedding) in enumerate(zip(documents, embeddings)):
-            # Generate unique ID
-            doc_id = f"doc_{uuid.uuid4().hex[:8]}_{i}"
-            ids.append(doc_id)
-
+        for i, (doc, embedding, doc_id) in enumerate(
+            zip(documents, embeddings, ids)
+        ):
             # Prepare metadata
             metadata = {
                 key: ("" if value is None else value)
@@ -82,6 +88,7 @@ class VectorStore:
 
             metadata["doc_index"] = i
             metadata["content_length"] = len(doc.page_content)
+
             metadatas.append(metadata)
 
             # Document content
@@ -90,17 +97,23 @@ class VectorStore:
             # Embedding
             embeddings_list.append(embedding.tolist())
 
-        # Add to collection
         try:
             self.collection.add(
                 ids=ids,
                 embeddings=embeddings_list,
                 metadatas=metadatas,
                 documents=documents_text
-
             )
-            print(f"Succesfullt added {len(documents)} documents to vector store")
-            print(f"Total documents in collection: {self.collection.count()}")
+
+            print(
+                f"Successfully added {len(documents)} documents "
+                f"to vector store"
+            )
+
+            print(
+                f"Total documents in collection: "
+                f"{self.collection.count()}"
+            )
 
         except Exception as e:
             print(f"Error adding documents to vector store: {e}")
