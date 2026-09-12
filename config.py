@@ -25,7 +25,7 @@ EMBEDDING_MODEL_NAME = "all-MiniLM-L6-v2"
 COLLECTION_NAME = "pdf_documents"
 
 # --- LLM (Groq) ---------------------------------------------------------
-GROQ_MODEL_NAME = "llama-3.3-70b-versatile"
+GROQ_MODEL_NAME = "openai/gpt-oss-120b"
 GROQ_TEMPERATURE = 0.1
 GROQ_MAX_TOKENS = 1024
 
