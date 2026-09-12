@@ -100,6 +100,7 @@ Open separate terminals for each service.
 
 ```bash
 uv run python -m uvicorn api.main:app --reload --port 8000
+uv run python -m uvicorn api.main:app --host 127.0.0.1 --port 8000
 ```
 
 The API will be available at:
@@ -112,6 +113,7 @@ http://127.0.0.1:8000
 
 ```bash
 uv run python -m streamlit run streamlit_app.py
+uv run python -m streamlit run streamlit_app.py --server.port 8501
 ```
 
 Then open the local URL displayed by Streamlit in your browser.

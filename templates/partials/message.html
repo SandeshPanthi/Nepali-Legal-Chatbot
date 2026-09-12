@@ -1,0 +1,37 @@
+<!-- User message -->
+<div class="message user-message">
+    <div class="message-content">{{ query }}</div>
+</div>
+
+<!-- Assistant message -->
+<div class="message assistant-message">
+    <div class="message-content markdown-body">{{ answer | md | safe }}</div>
+    
+    {% if sources %}
+    <div class="sources">
+        <details>
+            <summary>📚 Sources ({{ sources|length }} documents)</summary>
+            <ul>
+                {% for source in sources %}
+                <li>
+                    <strong>{{ source.title }}</strong> — 
+                    Section: {{ source.section }} — 
+                    Page: {{ source.page }} — 
+                    Rank: {{ source.rank }}
+                </li>
+                {% endfor %}
+            </ul>
+        </details>
+    </div>
+    {% endif %}
+    
+    {% if confidence and confidence.retrieved_documents > 0 %}
+    <div class="confidence">
+        <small>
+            Retrieved: {{ confidence.retrieved_documents }} docs | 
+            Agreement: {{ confidence.agreement_ratio }} | 
+            Top RRF: {{ confidence.top_rrf_score }}
+        </small>
+    </div>
+    {% endif %}
+</div>
